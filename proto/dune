@@ -1,18 +1,27 @@
 (library
- (name routeguide)
+ (name xapi_grpc)
  (package xapi-grpc)
  (preprocess
   (pps ppx_deriving.show ppx_deriving.eq))
- (libraries ocaml-protoc-plugin))
+ (libraries ocaml-protoc-plugin.google_types ocaml-protoc-plugin))
 
 (rule
- (targets route_guide.ml)
+ (targets google_include)
+ (action
+  (with-stdout-to
+   %{targets}
+   (system "pkg-config protobuf --variable=includedir"))))
+
+(rule
+ (targets xapi.ml)
  (deps
-  (:proto route_guide.proto))
+  (:proto xapi.proto))
  (action
   (run
    protoc
    -I
+   %{read-lines:google_include}
+   -I
    .
-   "--ocaml_out=annot=[@@deriving show { with_path = false }, eq]:."
+   "--ocaml_out=open=Google_types;annot=[@@deriving show { with_path = false }, eq]:."
    %{proto})))

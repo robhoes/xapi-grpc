@@ -1,13 +1,13 @@
 (executables
  (names server client)
  (package xapi-grpc)
- (public_names routeguide-server routeguide-client)
+ (public_names xapi-server xapi-client)
  (libraries
   grpc-eio
   eio_main
   h2-eio
   ocaml-protoc-plugin
-  routeguide
+  xapi_grpc
   yojson
   ppx_deriving_yojson.runtime)
  (preprocess

@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+//import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+message PIFRef {
+  string ref = 1;
+}
+
+message VIFRef {
+  string ref = 1;
+}
+
+message BlobRef {
+  string ref = 1;
+}
+
+enum network_operations {
+  attaching = 0;
+}
+
+enum network_default_locking_mode {
+  unlocked = 0;
+  disabled = 1;
+}
+
+enum network_purpose {
+  nbd = 0;
+  insecure_nbd = 1;
+}
+
+message network {
+  int64 MTU = 1;
+  repeated PIFRef PIFs = 2;
+  repeated VIFRef VIFs = 3;
+  network_operations allowed_operations = 4;
+  map<string, string> assigned_ips = 5;  // key should be VIFRef!!
+  map<string, BlobRef> blobs = 6;
+  string bridge = 7;
+  // keys are task refs, but not in defined as such in the datamodel!
+  map<string, network_operations> current_operations = 8;
+  network_default_locking_mode default_locking_mode = 9;
+  bool managed = 10;
+  string name_description = 11;
+  string name_label = 12;
+  map<string, string> other_config = 13;
+  repeated network_purpose purpose = 14;
+  repeated string tags = 15;
+  string uuid = 16;
+}
+
+service Network_class {
+  rpc Create(network) returns (google.protobuf.StringValue) {}
+}
