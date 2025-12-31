@@ -28,7 +28,6 @@ let server () =
     v ()
     |> add_service ~name:"xapi.Network_class" ~service:(xapi_network_service ()))
 
-(* $MDX part-end *)
 let connection_handler server ~sw =
   let error_handler client_address ?request:_ _error start_response =
     Eio.traceln "Error in request from:%a" Eio.Net.Sockaddr.pp client_address;
@@ -38,6 +37,10 @@ let connection_handler server ~sw =
     H2.Body.Writer.close response_body
   in
   let request_handler _client_address request_descriptor =
+    
+    let { H2.Request.meth; target; _ } = H2.Reqd.request request_descriptor in
+    Eio.traceln "You made a %s request to the following resource: %s\n" (H2.Method.to_string meth) target ;
+    
     Eio.Fiber.fork ~sw (fun () ->
         Grpc_eio.Server.handle_request server request_descriptor)
   in
@@ -45,7 +48,6 @@ let connection_handler server ~sw =
     H2_eio.Server.create_connection_handler ?config:None ~request_handler
       ~error_handler addr socket ~sw
 
-(* $MDX part-begin=server-main *)
 let serve server env =
   let port = 8080 in
   let net = Eio.Stdenv.net env in
