@@ -4,8 +4,10 @@
  (public_names xapi-server xapi-client)
  (libraries
   grpc-eio
+  grpc_unix
   eio_main
   h2-eio
+  h2_unix
   ocaml-protoc-plugin
   xapi_grpc
   yojson

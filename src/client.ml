@@ -19,7 +19,7 @@ let client ~sw host port network =
 let call_network_create connection network_record =
   let encode, decode = Service.make_client_functions Network_class.create in
   let response =
-    Client.call ~service:"xapi.Network_class" ~rpc:"Create"
+    Client.call ~service:"network" ~rpc:"create"
       ~do_request:(H2_eio.Client.request connection ~error_handler:ignore)
       ~handler:
         (Client.Rpc.unary
@@ -37,7 +37,7 @@ let call_network_create connection network_record =
       ()
   in
   match response with
-  | Ok (res, _ok) -> Printf.printf "RESPONSE = {%s}" res
+  | Ok (res, _ok) -> Printf.printf "RESPONSE = {%s}\n" res
   | Error _ -> Printf.printf "an error occurred"
 
 let main env =

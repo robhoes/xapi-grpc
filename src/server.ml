@@ -1,9 +1,15 @@
-open Grpc_eio
+open Grpc_unix
 open Xapi_grpc.Xapi
 open Ocaml_protoc_plugin
 
+let debug (fmt : ('a, unit, string, 'b) format4) =
+  Printf.ksprintf
+    (fun s -> Printf.printf "%d: %s\n%!" Thread.(self () |> id) s)
+    fmt
+
 module Network = struct
   let create (buffer : string) =
+    debug "network.create" ;
     let decode, encode = Service.make_service_functions Network_class.create in
     (* Decode the request. *)
     let network_record =
@@ -13,57 +19,57 @@ module Network = struct
           failwith
             (Printf.sprintf "Could not decode request: %s" (Result.show_error e))
     in
-    Eio.traceln "Network.create: received {uuid=%s}" network_record.Network.uuid;
+    debug "network.create: received {uuid=%s}" network_record.Network.uuid;
     let r = "OpaqueRef:xyz-xyz" in
-    Eio.traceln "Network.create: created network %s" r;
+    debug "network.create: created network %s" r;
     (Grpc.Status.(v OK), Some (r |> encode |> Writer.contents))
 end
 
 let xapi_network_service () =
   Server.Service.(
-    v () |> add_rpc ~name:"Create" ~rpc:(Unary Network.create) |> handle_request)
+    v () |> add_rpc ~name:"create" ~rpc:(Unary Network.create) |> handle_request)
 
 let server () =
   Server.(
     v ()
-    |> add_service ~name:"xapi.Network_class" ~service:(xapi_network_service ()))
+    |> add_service ~name:"network" ~service:(xapi_network_service ()))
 
-let connection_handler server ~sw =
-  let error_handler client_address ?request:_ _error start_response =
-    Eio.traceln "Error in request from:%a" Eio.Net.Sockaddr.pp client_address;
+let connection_handler grpc_server =
+  let error_handler _client_socket ?request:_ _error start_response =
+    debug "Error in request from" ;
     let response_body = start_response H2.Headers.empty in
     H2.Body.Writer.write_string response_body
-      "There was an error handling your request.\n";
+      "There was an error handling your request.";
     H2.Body.Writer.close response_body
   in
-  let request_handler _client_address request_descriptor =
-    
-    let { H2.Request.meth; target; _ } = H2.Reqd.request request_descriptor in
-    Eio.traceln "You made a %s request to the following resource: %s\n" (H2.Method.to_string meth) target ;
-    
-    Eio.Fiber.fork ~sw (fun () ->
-        Grpc_eio.Server.handle_request server request_descriptor)
+  let request_handler _client_address _proxy {Gluten.reqd; _ } =
+    let { H2.Request.meth; target; _ } = H2.Reqd.request reqd in
+    debug "You made a %s request to the following resource: %s" (H2.Method.to_string meth) target ;
+    let _ = Thread.create (fun () -> Grpc_unix.Server.handle_request grpc_server reqd) () in
+    ()
   in
-  fun socket addr ->
-    H2_eio.Server.create_connection_handler ?config:None ~request_handler
-      ~error_handler addr socket ~sw
+  fun addr socket ->
+    H2_unix.Server.create_connection_handler ~request_handler
+      ~error_handler addr socket
 
-let serve server env =
-  let port = 8080 in
-  let net = Eio.Stdenv.net env in
-  let addr = `Tcp (Eio.Net.Ipaddr.V4.loopback, port) in
-  Eio.Switch.run @@ fun sw ->
-  let handler = connection_handler ~sw (server ()) in
-  let server_socket =
-    Eio.Net.listen net ~sw ~reuse_addr:true ~backlog:10 addr
-  in
-  let rec listen () =
-    Eio.Net.accept_fork ~sw server_socket
-      ~on_error:(fun exn -> Eio.traceln "%s" (Printexc.to_string exn))
-      handler;
-    listen ()
-  in
-  Eio.traceln "Listening on port %i for grpc requests\n" port;
-  listen ()
+let main port =
+  let sockaddr = Unix.ADDR_INET (Unix.inet_addr_any, port) in
+  let domain = Unix.domain_of_sockaddr sockaddr in
+  let sock = Unix.socket domain Unix.SOCK_STREAM 0 in
+  let grpc_server = server () in
+  Unix.setsockopt sock Unix.SO_REUSEADDR true;
+  Unix.bind sock sockaddr;
+  Unix.listen sock 5;
+  while true do
+    let s, caller = Unix.accept ~cloexec:true sock in
+    debug "Accepted connection";
+    connection_handler grpc_server caller s;
+    debug "Dispatched connection handler"
+  done
 
-let () = Eio_main.run (serve server)
+let () =
+  let port = ref 8080 in
+  Arg.parse
+    [ ("-p", Arg.Set_int port, " Listening port number (8080 by default)") ]
+    ignore "gRPC server";
+  main !port
