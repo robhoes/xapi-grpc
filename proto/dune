@@ -25,3 +25,15 @@
    .
    "--ocaml_out=open=Google_types;annot=[@@deriving show { with_path = false }, eq]:."
    %{proto})))
+
+(rule
+ (targets xenapi.ml)
+ (deps
+  (:proto xenapi.proto))
+ (action
+  (run
+   protoc
+   -I
+   .
+   "--ocaml_out=annot=[@@deriving show { with_path = false }, eq]:."
+   %{proto})))

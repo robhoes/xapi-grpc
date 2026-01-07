@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+// Wrapper message for `string`.
+//
+// The JSON representation for `StringValue` is JSON string.
+//
+// Not recommended for use in new APIs, but still useful for legacy APIs and
+// has no plan to be removed.
+message StringValue {
+  // The string value.
+  string value = 1;
+}
+
+enum network_operations {
+  attaching = 0;
+}
+
+enum network_default_locking_mode {
+  unlocked = 0;
+  disabled = 1;
+}
+
+enum network_purpose {
+  nbd = 0;
+  insecure_nbd = 1;
+}
+
+message network {
+  int64 MTU = 1;
+  repeated string PIFs = 2;
+  repeated string VIFs = 3;
+  network_operations allowed_operations = 4;
+  map<string, string> assigned_ips = 5;
+  map<string, string> blobs = 6;
+  string bridge = 7;
+  map<string, network_operations> current_operations = 8;
+  network_default_locking_mode default_locking_mode = 9;
+  bool managed = 10;
+  string name_description = 11;
+  string name_label = 12;
+  map<string, string> other_config = 13;
+  repeated network_purpose purpose = 14;
+  repeated string tags = 15;
+  string uuid = 16;
+}
+
+service Network_class {
+  rpc Create(network) returns (StringValue) {}
+}
