@@ -1,0 +1,3 @@
+(library
+ (name grpc_unix)
+ (libraries grpc h2 unix threads eio))
