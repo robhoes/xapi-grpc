@@ -1,0 +1,4 @@
+(library
+ (name h2_unix)
+ (wrapped false)
+ (libraries unix threads.posix h2 gluten angstrom faraday bigstringaf))
