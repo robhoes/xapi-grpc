@@ -1,13 +1,14 @@
 (executables
- (names server client)
- (package xapi-grpc)
- (public_names xapi-server xapi-client)
+ (names server client_eio client_h2c)
+; (package xapi-grpc)
+; (public_names xapi-server xapi-client)
  (libraries
   grpc-eio
   grpc_unix
   eio_main
   h2-eio
   h2_unix
+  httpun-eio
   ocaml-protoc-plugin
   xapi_grpc
   yojson

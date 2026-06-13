@@ -32,7 +32,7 @@ let handle_request t reqd =
       match H2.Headers.get request.headers "content-type" with
       | Some s ->
           if
-            Stringext.chop_prefix s ~prefix:"application/grpc" |> Option.is_some
+            String.starts_with s ~prefix:"application/grpc"
           then
             match H2.Headers.get request.headers "grpc-encoding" with
             | None | Some "identity" -> (

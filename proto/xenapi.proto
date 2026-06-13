@@ -44,6 +44,66 @@ message network {
   string uuid = 16;
 }
 
+message get_by_name_label_msg {
+  string session_id = 1;
+  string label = 2;
+}
+
 service Network_class {
   rpc Create(network) returns (StringValue) {}
+  rpc get_by_name_label(get_by_name_label_msg) returns (StringValue) {}
+}
+
+message login_with_password_msg {
+  string uname = 1;
+  string pwd = 2;
+  string version = 3;
+  string originator = 4;
+}
+
+service session {
+  rpc login_with_password(login_with_password_msg) returns (StringValue) {}
+}
+
+message event_stream_msg {
+  string session_id = 1;
+  repeated string classes = 2;
+}
+
+message vm_record {
+  string uuid = 1;
+  string name_label = 2;
+  string power_state = 3;
+}
+
+message host_record {
+  string uuid = 1;
+  string name_label = 2;
+}
+
+message event_record {
+  string id = 1;
+  string ty = 2;
+  string op = 3;
+  string reference = 4;
+  oneof snapshot {
+    vm_record vm = 6;
+    host_record host = 7;
+  }
+}
+
+service event {
+  rpc stream(event_stream_msg) returns (stream event_record) {}
+}
+
+message get_all_msg {
+  string session_id = 1;
+}
+
+message get_all_ret {
+  repeated string refs = 1;
+}
+
+service host {
+  rpc get_all(get_all_msg) returns (get_all_ret) {}
 }
