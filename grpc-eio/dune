@@ -1,0 +1,3 @@
+(library
+ (name grpc_eio)
+ (libraries grpc h2 eio))
